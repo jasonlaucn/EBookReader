@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.IO;
 using System.Windows.Documents;
 using EBookReader.Model;
@@ -18,20 +19,44 @@ namespace EBookReader
         private const string CHAPTERINDEXITEMNAME = "ChapterIndex";
         private const string CHAPTEROFFSETITEMNAME = "ChapterOffset";
 
-        public const string DEFAULTTXTREGEX = @"(第.*?章)|(\d+\.\s)";
+        public const string DEFAULTTXTREGEX1 = @"^(第.*?章\s*)|^序\s+|^序$|^前言\s+|^前言$|^后记\s|^后记$";
+        public const string DEFAULTTXTREGEX2 = @"^(\d+\.\s*)|^序\s+|^序$|^前言\s+|^前言$|^后记\s|^后记$";
         public const string REGEXITMENAME = "Regex";
         public const string BOOKEXT = ".book";
 
         public static string ConfigFile = AppDomain.CurrentDomain.BaseDirectory + @"\Config.ini";
         public static string BookDir = AppDomain.CurrentDomain.BaseDirectory + @"\Books\";
 
-        public static string GetConfig(string key)
+        public static T GetAppSetting<T>(AppSettingKey key, object defaultValue = null)
+        {
+            var asr = new AppSettingsReader();
+            var value = asr.GetValue(key.ToString(), typeof (T));
+            if (value == null)
+            {
+                return (T)defaultValue;
+            }
+            return (T) value;
+        }
+
+        public static string GetConfig(ConfigKey key,string defaultValue = "")
         {
             if (!File.Exists(ConfigFile))
             {
-                return string.Empty;
+                return defaultValue;
             }
-            return IniUtils.Read(ConfigFile, CONFIGKEY, key, "").Trim();
+            return IniUtils.Read(ConfigFile, CONFIGKEY, key.ToString(), defaultValue).Trim();
+        }
+
+        public static void SetConfig(ConfigKey key, string value)
+        {
+            if (!File.Exists(ConfigFile))
+            {
+                using (var fs = File.Create(ConfigFile))
+                {
+                    fs.Close();
+                }
+            }
+            IniUtils.Write(ConfigFile, CONFIGKEY, key.ToString(), value);
         }
 
         public static List<BookInfo> GetAllBooks()
@@ -97,7 +122,7 @@ namespace EBookReader
 
         public static void DelBook(string id)
         {
-            IniUtils.Write(ConfigFile, id, "", "");
+            IniUtils.WriteSection(ConfigFile, id, "");
         }
 
         public static void SaveCurrentBook(BookInfo info)

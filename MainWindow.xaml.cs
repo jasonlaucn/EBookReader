@@ -9,6 +9,8 @@ using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
+using EBookReader.Biz;
 using EBookReader.Model;
 using EBookReader.Utils;
 using Microsoft.Win32;
@@ -25,10 +27,13 @@ namespace EBookReader
         private BookInfo _bookInfo;
         private bool _autoLoad = true;
         private List<ChaptersInfo> _chapters = new List<ChaptersInfo>();
-        private Point _pt;
         private Size _oldSize;
         private string _file;
         private string _txtRegex;
+        private bool _regexChanged;
+        private Point _p;
+        private bool _isResize;
+        private FloatingWin _floatingWin;
 
         public MainWindow()
         {
@@ -49,11 +54,12 @@ namespace EBookReader
             {
                 return;
             }
-                SaveCurrentBook();
-                LsCatalog.ItemsSource = null;
-                TbContent.Text = "";
-                _bookInfo = null;
-                _currentChapter = null;
+            SaveCurrentBook();
+            LsCatalog.ItemsSource = null;
+            TbContent.Text = "";
+            _bookInfo = null;
+            _currentChapter = null;
+            _regexChanged = false;
             _autoLoad = false;
             _file = fileDialog.FileName;
             //TbFile.Text = FileHelper.GetFileExtNonePoint(_file);
@@ -65,8 +71,9 @@ namespace EBookReader
             BdBookShelf.Visibility =Visibility.Visible;
             LoadBookShelft();
         }
+        
 
-        private void BdBookShelf_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        private void BookShelfCloseOnClick(object sender, RoutedEventArgs e)
         {
             BdBookShelf.Visibility = Visibility.Collapsed;
         }
@@ -78,32 +85,29 @@ namespace EBookReader
                 if (_bookInfo == null || _bookInfo.BookId != book.BookId)
                 {
                     SaveCurrentBook();
-                    _autoLoad = true;
                     _file = book.FilePath;
+                    _currentChapter = null;
+                    LsCatalog.ItemsSource = null;
                     _bookInfo = book;
-                    new Thread(GetChapters).Start();
+                    _regexChanged = false;
+                    _autoLoad = true;
+                    GetChapters();
                 }
             }
             BdBookShelf.Visibility = Visibility.Collapsed;
         }
 
-        private void CbTitleVisbleOnClick(object sender, RoutedEventArgs e)
-        {
-            SpTitle.Visibility = (sender as CheckBox).IsChecked == true ? Visibility.Collapsed : Visibility.Visible;
-        }
-
-        private void CbCatalogVisbleOnClick(object sender, RoutedEventArgs e)
-        {
-            LsCatalog.Visibility = (sender as CheckBox).IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
-            if ((sender as CheckBox).IsChecked == true && _currentChapter != null)
-            {
-                LsCatalog.ScrollIntoView(_currentChapter);
-            }
-        }
-
 
         private void MainWindow_OnLoaded(object sender, RoutedEventArgs e)
         {
+            _floatingWin = new FloatingWin { Owner = this };
+            _floatingWin.Left = SystemParameters.VirtualScreenWidth - _floatingWin.Width;
+            _floatingWin.Top = 0;
+            _floatingWin.Show();
+            //var web = new WebBook("http://www.biquge.tw/59_59883/");
+            //return;
+            LoadConfig();
+            _txtRegex = ConfigSevice.DEFAULTTXTREGEX1;
             if (!ConfigSevice.GetCurrentBookInfo(out _bookInfo))
             {
                 return;
@@ -114,25 +118,64 @@ namespace EBookReader
 
         private void MainWindow_OnClosing(object sender, CancelEventArgs e)
         {
+            //_floatingWin.Close();
+            SaveConfig();
             SaveCurrentBook();
+        } 
+        private void BookOnDel(object sender, MouseButtonEventArgs e)
+        {
+            var book = (sender as Border).DataContext as BookInfo;
+            if (book == null || string.IsNullOrEmpty(book.BookId))
+            {
+                return;
+            }
+            ConfigSevice.DelBook(book.BookId);
+            if (_bookInfo != null && book.BookId == _bookInfo.BookId)
+            {
+                _bookInfo = null;
+                LsCatalog.ItemsSource = null;
+                TbContent.Text = "";
+                TbBookName.Text = "";
+                TbFile.Text = "";
+                _file = "";
+                _chapters.Clear();
+                _currentChapter = null;
+            }
+            LoadBookShelft();
+            e.Handled = true;
         }
-
         private void BtnDel(object sender, RoutedEventArgs e)
         {
             LsCatalog.ItemsSource = null;
             TbContent.Text = "";
+            TbBookName.Text = "";
+            TbFile.Text = "";
             _file = "";
+            _chapters.Clear();
             _currentChapter = null;
             if (_bookInfo != null && !string.IsNullOrEmpty(_bookInfo.BookId))
             {
                 ConfigSevice.DelBook(_bookInfo.BookId);
             }
+            _bookInfo = null;
         }
 
-        private void Btn1OnClick(object sender, RoutedEventArgs e)
+        private void BtnWebDownload(object sender, RoutedEventArgs e)
         {
-            PageUp();
+            var win = new WebBookDownloader();
+            win.SetOpacity(Opacity);
+            win.Owner = this;
+            win.ShowDialog();
         }
+
+
+        private void SBrightness_OnValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            var value = (byte)Math.Round(sBrightness.Value, 0);
+            var brush = new SolidColorBrush(Color.FromRgb(value, value, value));
+            TbContent.Foreground = brush;
+        }
+
         private void Btn2OnClick(object sender, RoutedEventArgs e)
         {
             ChapterUp();
@@ -141,63 +184,120 @@ namespace EBookReader
         {
             ChapterDown();
         }
-        private void Btn4OnClick(object sender, RoutedEventArgs e)
-        {
-            PageDown();
-        }
         private void Btn5OnClick(object sender, RoutedEventArgs e)
         {
             Close();
         }
+        private void WinStateOnClick(object sender, RoutedEventArgs e)
+        {
+            WindowState = (sender as CheckBox).IsChecked==true ? WindowState.Maximized : WindowState.Normal;
+        }
+        private void WinMinOnClick(object sender, RoutedEventArgs e)
+        {
+            WindowState = WindowState.Minimized;
+        }
+
+        private void CbTitleVisbleOnClick(object sender, RoutedEventArgs e)
+        {
+            if ((sender as CheckBox).IsChecked == true)
+            {
+                SpTitle.Visibility = Visibility.Collapsed;
+                SpSetting.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                SpTitle.Visibility = Visibility.Visible;
+                SpSetting.Visibility = Visibility.Visible;
+            }
+        }
+
+        private void CbCatalogVisbleOnClick(object sender, RoutedEventArgs e)
+        {
+            LsCatalog.Visibility = (sender as CheckBox).IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+            UpdateLayout();
+            if ((sender as CheckBox).IsChecked == true && _currentChapter != null)
+            {
+                var offset = LsCatalog.ActualHeight * (LsCatalog.SelectedIndex + 1) / _chapters.Count - 30;
+                if (offset > 0)
+                {
+                    svCatalog.ScrollToVerticalOffset(offset);
+                }
+                else
+                {
+                    svCatalog.ScrollToTop();
+                }
+            }
+        }
 
         private void HandleOnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            Win32Support.POINT point;
-            Win32Support.GetCursorPos(out point);
-            _pt = new Point(point.X, point.Y);
+            _p = e.GetPosition(this);
+            if (_p.X <= ActualWidth - 20 || _p.Y <= ActualHeight - 20)
+            {
+                DragMove();
+                return;
+            }
             _oldSize = new Size(ActualWidth, ActualHeight);
-            Mouse.Capture(sender as Path);
+            Mouse.Capture(this);
+            _isResize =true;
         }
 
         private void HandelOnMouseMove(object sender, MouseEventArgs e)
         {
-            if (e.LeftButton == MouseButtonState.Pressed)
+            if (e.LeftButton != MouseButtonState.Pressed)
             {
-                Win32Support.POINT point;
-                Win32Support.GetCursorPos(out point);
-                var p = new Point(point.X, point.Y);
-                Width = _oldSize.Width + p.X - _pt.X;
-                Height = _oldSize.Height + p.Y - _pt.Y;
-            }
-            else
-            {
-                (sender as Path).ReleaseMouseCapture();
+                var p = e.GetPosition(this);
+                WindowResize(p);
             }
         }
 
         private void HandelOnMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
-            (sender as Path).ReleaseMouseCapture();
+            var p = e.GetPosition(this);
+            WindowResize(p);
+        }
+        private void WindowResize(Point p)
+        {
+            if (_isResize)
+            {
+                Width = _oldSize.Width + p.X - _p.X;
+                Height = _oldSize.Height + p.Y - _p.Y;
+                _isResize = false;
+                ReleaseMouseCapture();
+                TbContent_OnPreviewMouseWheel(null, null);
+            }
         }
         private void LsCatalog_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             var item = LsCatalog.SelectedItem as ChaptersInfo;
             if (item != null)
             {
+                Chapterpbar.Value = 0;
                 _currentChapter = item;
                 var index = _chapters.IndexOf(item);
-                if (index < (_chapters.Count - 1))
+                try
                 {
-                    var item2 = _chapters[index + 1];
-                    TbContent.Text = GetChapterContent(item.LineNum, item2.LineNum - 1);
+                    if (index < (_chapters.Count - 1))
+                    {
+                        var item2 = _chapters[index + 1];
+                        TbContent.Text = GetChapterContent(item.LineNum, item2.LineNum - 1);
+                    }
+                    else
+                    {
+                        TbContent.Text = GetChapterContent(item.LineNum, -1);
+                    }
                 }
-                else
+                catch
                 {
-                    TbContent.Text = GetChapterContent(item.LineNum, -1);
+                    ReloadBook();
+                    return;
                 }
                 if (_autoLoad)
                 {
-                    TbContent.ScrollToVerticalOffset(_bookInfo.ChapterOffset);
+                    UpdateLayout();
+                    var c = _bookInfo.ChapterOffset + TbContent.ViewportHeight;
+                    Chapterpbar.Value = c / TbContent.ExtentHeight * 100;
+                    TbContent.ScrollToVerticalOffset(c);
                 }
                 else
                 {
@@ -205,13 +305,21 @@ namespace EBookReader
                 }
                 TbFile.Text = item.Content;
             }
-
+            TotalCpbar.PercentValue = (LsCatalog.SelectedIndex + 1) / (double)_chapters.Count * 100;
             _autoLoad = false; 
             if (LsCatalog.Visibility == Visibility.Visible)
             {
                 LsCatalog.Visibility = Visibility.Collapsed;
                 CbCatalogVisble.IsChecked = false;
             }
+        }
+        private void ReloadBook()
+        {
+            _autoLoad = true;
+            _regexChanged = true;
+            _txtRegex = _txtRegex == ConfigSevice.DEFAULTTXTREGEX1
+                ? ConfigSevice.DEFAULTTXTREGEX2 : ConfigSevice.DEFAULTTXTREGEX1;
+            GetChapters();
         }
 
         private void GetChapters()
@@ -228,11 +336,6 @@ namespace EBookReader
                 var tmpFile = ConfigSevice.BookDir + name + ConfigSevice.BOOKEXT;
                 FileHelper.FileToUTF8(_file, tmpFile);
                 _file = tmpFile;
-            }
-            _txtRegex = ConfigSevice.GetConfig(ConfigSevice.REGEXITMENAME);
-            if (string.IsNullOrEmpty(_txtRegex))
-            {
-                _txtRegex = ConfigSevice.DEFAULTTXTREGEX;
             }
             var rgx = new Regex(_txtRegex);
             using (StreamReader sr = File.OpenText(_file))
@@ -264,6 +367,11 @@ namespace EBookReader
                     lineNum++;
                 }
             }
+            if ( _chapters.Count <= 0 && !_regexChanged)
+            {
+                ReloadBook();
+                return;
+            }
             Dispatcher.Invoke(() =>
             {
                 LsCatalog.ItemsSource = _chapters;
@@ -271,8 +379,7 @@ namespace EBookReader
                 {
                     if (_autoLoad)
                     {
-                        _autoLoad = false;
-                        LsCatalog.SelectedIndex = _bookInfo.ChapterIndex;
+                        LsCatalog.SelectedIndex = _bookInfo.ChapterIndex < 0 ? 0 : _bookInfo.ChapterIndex;
                     }
                     else
                     {
@@ -284,7 +391,9 @@ namespace EBookReader
                         ConfigSevice.SaveBook(ref _bookInfo);
                         LsCatalog.SelectedIndex = 0;
                     }
+                    TbBookName.Text = string.Format("《{0}》", _bookInfo.BookName);
                 }
+                
             });
         }
 
@@ -305,8 +414,12 @@ namespace EBookReader
                         }
                         if (content.Length > 1024*1024)
                         {
-                            MessageBox.Show("章节内容超过1MB,超出部分未加载");
-                            break;
+                            if (_regexChanged)
+                            {
+                                MessageBox.Show("章节内容超过1MB,超出部分未加载");
+                                break;
+                            }
+                            throw new Exception();
                         }
                         content.Append(s + "\r\n");
                     }
@@ -349,11 +462,6 @@ namespace EBookReader
             ListCtrlBookShelf.ItemsSource = list;
         }
 
-        private void MainWindow_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        {
-            DragMove();
-        }
-
         private void MainWindow_OnPreviewKeyDown(object sender, KeyEventArgs e)
         {
             switch (e.Key)
@@ -377,10 +485,12 @@ namespace EBookReader
                 case Key.Down:
                 case Key.E:
                     TbContent.LineDown();
+                    TbContent_OnPreviewMouseWheel(null, null);
                     break;
                 case Key.Up:
                 case Key.Q:
                     TbContent.LineUp();
+                    TbContent_OnPreviewMouseWheel(null, null);
                     break;
                 case Key.Escape:
                     WindowState = WindowState.Minimized;
@@ -389,10 +499,17 @@ namespace EBookReader
         }
         private void PageUp()
         {
-            var o = TbContent.VerticalOffset - TbContent.ActualHeight;
-            if (o <= 0)
+            if (Chapterpbar.Value <= 0)
+            {
+                ChapterUp();
+                return;
+            }
+            var o = TbContent.VerticalOffset - TbContent.ViewportHeight;
+            Chapterpbar.Value = o / TbContent.ExtentHeight * 100;
+            if (Chapterpbar.Value <= 0)
             {
                 TbContent.ScrollToHome();
+                Chapterpbar.Value = 0;
                 return;
             }
             TbContent.ScrollToVerticalOffset(o);
@@ -400,13 +517,19 @@ namespace EBookReader
 
         private void PageDown()
         {
-            var c = TbContent.VerticalOffset + TbContent.ActualHeight;
-            if (c > TbContent.ExtentHeight)
+            if (Chapterpbar.Value >= 100)
             {
-                TbContent.ScrollToEnd();
+                ChapterDown();
                 return;
             }
-
+            var c = TbContent.VerticalOffset + TbContent.ViewportHeight;
+            Chapterpbar.Value = c / TbContent.ExtentHeight * 100;
+            if (Chapterpbar.Value >= 100)
+            {
+                TbContent.ScrollToEnd();
+                Chapterpbar.Value = 100;
+                return;
+            }
             TbContent.ScrollToVerticalOffset(c);
         }
 
@@ -419,7 +542,8 @@ namespace EBookReader
             }
             else
             {
-                MessageBox.Show("前面没有了");
+                if(_bookInfo != null)
+                    MessageBox.Show("前面没有了");
             }
         }
 
@@ -432,9 +556,119 @@ namespace EBookReader
             }
             else
             {
-                MessageBox.Show("后面没有了");
+                if (_bookInfo != null)
+                    MessageBox.Show("后面没有了");
             }
         }
 
+        private void TbContent_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            e.Handled = true;
+            var tb = sender as TextBox;
+            var p = e.GetPosition(tb);
+            var h = tb.ActualHeight/3;
+            if (p.Y <= h)
+            {
+                PageUp();
+            }
+            else if (p.Y >= 2*h)
+            {
+                PageDown(); 
+            }
+            else
+            {
+
+                if (CbTitle.IsChecked == true)
+                {
+                    if (CbCatalogVisble.IsChecked != true)
+                    {
+                        CbTitle.IsChecked = false;
+                        SpTitle.Visibility = Visibility.Visible;
+                        SpSetting.Visibility = Visibility.Visible;
+                    }
+                    return;
+                }
+            }
+            if (CbTitle.IsChecked != true)
+            {
+                CbTitle.IsChecked = true;
+                SpTitle.Visibility = Visibility.Collapsed;
+                SpSetting.Visibility = Visibility.Collapsed;
+            }
+            if (CbCatalogVisble.IsChecked == true)
+            {
+                CbCatalogVisble.IsChecked = false;
+                LsCatalog.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private void TbContent_OnPreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            if (TbContent.VerticalOffset <= 0)
+            {
+                Chapterpbar.Value = 0;
+                return;
+            }
+            var c = TbContent.VerticalOffset + TbContent.ViewportHeight;
+            Chapterpbar.Value = c / TbContent.ExtentHeight * 100;
+        }
+
+        private void ColorsOnClick(object sender, RoutedEventArgs e)
+        {
+            var bg = (sender as RadioButton).Background;
+            BdBackground.Background = bg;
+        }
+
+        private void LoadConfig()
+        {
+            var isMaximized = ConfigSevice.GetConfig(ConfigKey.WindowMaximized, "0") == "1";
+            if (!isMaximized)
+            {
+                var size = ConfigSevice.GetConfig(ConfigKey.WindowSize);
+                if (!string.IsNullOrEmpty(size))
+                {
+                    var sizeArr = size.Split(',');
+                    if (sizeArr.Length == 2)
+                    {
+                        Width = double.Parse(sizeArr[0]);
+                        Height = double.Parse(sizeArr[1]);
+                    }
+                }
+            }
+            else
+            {
+                WindowState = WindowState.Maximized;
+            }
+            var opacity = ConfigSevice.GetConfig(ConfigKey.WindowOpacity, "0.8");
+            sOpacity.Value = double.Parse(opacity);
+            var background = ConfigSevice.GetConfig(ConfigKey.Background, "#AAA");
+            BdBackground.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(background));
+            foreach (RadioButton child in SpSetting.Children.Cast<object>().Where(child => child is RadioButton))
+            {
+                var str = (child.Background as SolidColorBrush).Color.ToString();
+                if (str == background)
+                {
+                    child.IsChecked = true;
+                }
+            }
+            var fontsize = ConfigSevice.GetConfig(ConfigKey.FontSize, "14");
+            sFontSize.Value = double.Parse(fontsize);
+            var brightness = ConfigSevice.GetConfig(ConfigKey.FontBrightness, "0");
+            sBrightness.Value = double.Parse(brightness);
+        }
+
+        private void SaveConfig()
+        {
+            var isMaximized = WindowState == WindowState.Maximized;
+            ConfigSevice.SetConfig(ConfigKey.WindowMaximized, isMaximized ? "1":"0");
+            if (!isMaximized)
+            {
+                ConfigSevice.SetConfig(ConfigKey.WindowSize, string.Format("{0},{1}", ActualWidth.ToString("F"), ActualHeight.ToString("F")));
+            }
+            ConfigSevice.SetConfig(ConfigKey.WindowOpacity, Opacity.ToString("F"));
+            ConfigSevice.SetConfig(ConfigKey.Background, (BdBackground.Background as SolidColorBrush).Color.ToString());
+            ConfigSevice.SetConfig(ConfigKey.FontSize, sFontSize.Value.ToString("F"));
+            ConfigSevice.SetConfig(ConfigKey.FontBrightness,sBrightness.Value.ToString("F"));
+        }
     }
 }

@@ -1,0 +1,19 @@
+﻿<Window x:Class="EBookReader.FloatingWin"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:controls="clr-namespace:EBookReader.Controls"
+        x:Name="floatingWing" MaxWidth="50" MaxHeight="50" Topmost="True"
+        WindowStyle="None"  AllowsTransparency="True" Background="Transparent"
+        WindowStartupLocation="Manual" ShowInTaskbar="False" Height="50" Width="50">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Themes/Generic.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+    <Grid>
+        <Border Background="#222" CornerRadius="25" MouseLeftButtonDown="BorderOnMouseDown">
+            <Path Stretch="Uniform" Fill="#FFF" Margin="1" Data="{DynamicResource IconBook}"/>
+        </Border>
+    </Grid>
+</Window>

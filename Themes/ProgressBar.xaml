@@ -1,0 +1,17 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Style x:Key="AiProgressBarH" TargetType="ProgressBar">
+        <Setter Property="Background" Value="#555"/>
+        <Setter Property="Foreground" Value="#FFF"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ProgressBar">
+                    <Grid>
+                        <Border Name="PART_Track" Background="{TemplateBinding Background}"/>
+                        <Border Background="{TemplateBinding Foreground}" Name="PART_Indicator" HorizontalAlignment="Left"/>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>

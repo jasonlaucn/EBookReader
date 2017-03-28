@@ -13,7 +13,20 @@ namespace EBookReader.Utils
         private static extern int GetPrivateProfileString(string section, string key, string def, System.Text.StringBuilder retVal, int size, string filePath);
         //获取ini文件所有的section  
         [DllImport("kernel32")]
-        private static extern int GetPrivateProfileSectionNamesA(byte[] buffer, int iLen, string fileName); 
+        private static extern int GetPrivateProfileSectionNamesA(byte[] buffer, int iLen, string fileName);
+        [DllImport("kernel32")]
+        private static extern long WritePrivateProfileSection(string section,string val, string filePath);
+
+        /// <summary>
+        /// 将Section写入ini文档
+        /// </summary>
+        /// <param name="path">ini文档路径</param>
+        /// <param name="section">片段</param>
+        /// <param name="value">值</param>
+        public static void WriteSection(string path, string section, string value)
+        {
+            WritePrivateProfileSection(section, value, path);
+        }
 
         /// <summary>
         /// 写入ini文档
