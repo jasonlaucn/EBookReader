@@ -48,7 +48,7 @@ namespace EBookReader
                     RestoreDirectory = true,
                     CheckFileExists = true,
                     Multiselect = false,
-                    Filter = "(*.txt;)|*.txt;"
+                    Filter = "(" + ConfigSevice.ImportBookExt + ")|" + ConfigSevice.ImportBookExt
                 };
             if (fileDialog.ShowDialog() != true)
             {
@@ -100,14 +100,17 @@ namespace EBookReader
 
         private void MainWindow_OnLoaded(object sender, RoutedEventArgs e)
         {
-            _floatingWin = new FloatingWin { Owner = this };
-            _floatingWin.Left = SystemParameters.VirtualScreenWidth - _floatingWin.Width;
-            _floatingWin.Top = 0;
-            _floatingWin.Show();
+            if (ConfigSevice.IsShowFloatingWin)
+            {
+                _floatingWin = new FloatingWin { Owner = this };
+                _floatingWin.Left = SystemParameters.VirtualScreenWidth - _floatingWin.Width;
+                _floatingWin.Top = 0;
+                _floatingWin.Show();
+            }
             //var web = new WebBook("http://www.biquge.tw/59_59883/");
             //return;
             LoadConfig();
-            _txtRegex = ConfigSevice.DEFAULTTXTREGEX1;
+            _txtRegex = ConfigSevice.DefaultTxtRegex1;
             if (!ConfigSevice.GetCurrentBookInfo(out _bookInfo))
             {
                 return;
@@ -136,7 +139,7 @@ namespace EBookReader
                 LsCatalog.ItemsSource = null;
                 TbContent.Text = "";
                 TbBookName.Text = "";
-                TbFile.Text = "";
+                TbChapter.Text = "";
                 _file = "";
                 _chapters.Clear();
                 _currentChapter = null;
@@ -149,7 +152,7 @@ namespace EBookReader
             LsCatalog.ItemsSource = null;
             TbContent.Text = "";
             TbBookName.Text = "";
-            TbFile.Text = "";
+            TbChapter.Text = "";
             _file = "";
             _chapters.Clear();
             _currentChapter = null;
@@ -303,7 +306,7 @@ namespace EBookReader
                 {
                     TbContent.ScrollToHome();
                 }
-                TbFile.Text = item.Content;
+                TbChapter.Text = item.Content;
             }
             TotalCpbar.PercentValue = (LsCatalog.SelectedIndex + 1) / (double)_chapters.Count * 100;
             _autoLoad = false; 
@@ -317,8 +320,8 @@ namespace EBookReader
         {
             _autoLoad = true;
             _regexChanged = true;
-            _txtRegex = _txtRegex == ConfigSevice.DEFAULTTXTREGEX1
-                ? ConfigSevice.DEFAULTTXTREGEX2 : ConfigSevice.DEFAULTTXTREGEX1;
+            _txtRegex = _txtRegex == ConfigSevice.DefaultTxtRegex1
+                ? ConfigSevice.DefaultRxtRegex2 : ConfigSevice.DefaultTxtRegex1;
             GetChapters();
         }
 
@@ -331,9 +334,9 @@ namespace EBookReader
                 return;
             }
             var name = FileHelper.GetFileNameNoneExt(_file);
-            if (!_file.EndsWith(ConfigSevice.BOOKEXT))
+            if (!_file.EndsWith(ConfigSevice.BookExt))
             {
-                var tmpFile = ConfigSevice.BookDir + name + ConfigSevice.BOOKEXT;
+                var tmpFile = ConfigSevice.BookDir + name + ConfigSevice.BookExt;
                 FileHelper.FileToUTF8(_file, tmpFile);
                 _file = tmpFile;
             }

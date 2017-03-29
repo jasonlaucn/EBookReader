@@ -167,10 +167,10 @@
                 <ColumnDefinition/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <Button Click="Btn2OnClick" Width="16" Height="16" Foreground="Transparent"  Style="{StaticResource BtnIconStyle}" Tag="{StaticResource ResxCollapsed}"/>
-            <ProgressBar Grid.Column="1" x:Name="Chapterpbar" Margin="20 5" Height="3" Value="0" Style="{DynamicResource AiProgressBarH}" />
+            <Button Click="Btn2OnClick" Width="32" Height="16" Foreground="Transparent"  Style="{StaticResource BtnIconStyle}" Tag="{StaticResource ResxCollapsed}"/>
+            <ProgressBar Grid.Column="1" x:Name="Chapterpbar" Height="2" Value="0"  Style="{DynamicResource AiProgressBarH}" />
             <CheckBox x:Name="CbTitle" Grid.Column="1" Style="{StaticResource Cb1}"  Click="CbTitleVisbleOnClick" IsChecked="True"/>
-            <Button Grid.Column="2" Click="Btn3OnClick" Width="16" Height="16" Foreground="Transparent"  Style="{StaticResource BtnIconStyle}" Tag="{StaticResource ResxExpand}"/>
+            <Button Grid.Column="2" Click="Btn3OnClick" Width="32" Height="16" Foreground="Transparent"  Style="{StaticResource BtnIconStyle}" Tag="{StaticResource ResxExpand}"/>
         </Grid>
         <DockPanel Grid.Row="2" x:Name="SpSetting" Margin="10" Visibility="Collapsed" LastChildFill="False">
             <Label Foreground="#FFF" Content="背景色:" VerticalAlignment="Center"/>
@@ -180,8 +180,9 @@
                 </Border>
             </RadioButton>
             <RadioButton Style="{DynamicResource RbColorStyle}" Background="#FFF"/>
-            <RadioButton Style="{DynamicResource RbColorStyle}" Background="#E8E4CA"/>
-            <RadioButton Style="{DynamicResource RbColorStyle}" Background="#E2F1D3"/>
+            <RadioButton Style="{DynamicResource RbColorStyle}" Background="#ECE6CE"/>
+            <RadioButton Style="{DynamicResource RbColorStyle}" Background="#DFEFD5"/>
+            <RadioButton Style="{DynamicResource RbColorStyle}" Background="#E7F4FD"/>
             <RadioButton Style="{DynamicResource RbColorStyle}" Background="#AAA" IsChecked="True"/>
             <RadioButton Style="{DynamicResource RbColorStyle}" Background="#888"/>
             <RadioButton Style="{DynamicResource RbColorStyle}" Background="#444"/>
@@ -190,15 +191,15 @@
                     SmallChange="1" Ticks="0 25 50 75 100 125 150 175 200 225 255" IsSnapToTickEnabled="True" ValueChanged="SBrightness_OnValueChanged" SmallIcon="{DynamicResource IconBrightnessDown}" LargeIcon="{DynamicResource IconBrightnessUp}"/>
             <controls:AiSlider x:Name="sFontSize" Width="120" Height="20" Margin="10 0" Maximum="24" Minimum="10" Value="14"  SmallIcon="{DynamicResource IconFontSizeDown}" LargeIcon="{DynamicResource IconFontSizeUp}"
                    SmallChange="1" Ticks="10 12 14 16 18 20 22 24" IsSnapToTickEnabled="True" ToolTip="{Binding ElementName=sFontSize,Path=Value,StringFormat='字号:{0:0}'}"/>
-            <controls:SystemTimer  DockPanel.Dock="Right" VerticalAlignment="Center" Margin="10"/>
+            <controls:SystemTimer  DockPanel.Dock="Right" VerticalAlignment="Center" Margin="10 0"/>
         </DockPanel>
         <DockPanel Grid.Row="3" x:Name="SpTitle" Margin="10" Visibility="Collapsed" LastChildFill="False">
             <Button Click="BtnOpen" Style="{StaticResource BtnToolbarStyle}" Tag="{StaticResource AiIconFloder}" ToolTip="文本书导入"/>
-            <Button Click="BtnWebDownload" Margin="10 0" Style="{StaticResource BtnToolbarStyle}" Tag="{StaticResource IconCloudDownload}" ToolTip="网页书籍下载"/>
-            <Button Click="BtnBookShelf" Style="{StaticResource BtnToolbarStyle}" Tag="{StaticResource Resource_TabHead}" ToolTip="书架"/>
-            <Button Click="BtnDel" Style="{StaticResource BtnToolbarStyle}" Tag="{StaticResource iconDustbin}" ToolTip="删除当前书籍"/>
+            <Button Click="BtnWebDownload" Margin="10 0"  Style="{StaticResource BtnToolbarStyle}" Tag="{StaticResource IconGlobe}" ToolTip="网页书籍下载"/>
+            <Button Click="BtnBookShelf" Style="{StaticResource BtnToolbarStyle}" Tag="{StaticResource IconBookShelf}" ToolTip="书架"/>
+            <Button Click="BtnDel" Margin="10 0" Style="{StaticResource BtnToolbarStyle}" Tag="{StaticResource iconDustbin}" ToolTip="删除当前书籍"/>
             <TextBlock x:Name="TbBookName" Margin="10 0" Foreground="#FFF" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"/>
-            <TextBlock x:Name="TbFile" Margin="10 0" MaxWidth="300" Foreground="#FFF" VerticalAlignment="Center"/>
+            <TextBlock x:Name="TbChapter" Margin="10 0" MaxWidth="300" Foreground="#FFF" VerticalAlignment="Center"/>
             <Button DockPanel.Dock="Right" Style="{DynamicResource WinButtonStyle5}" Tag="{DynamicResource IconCancel}" ToolTip="退出" Click="Btn5OnClick"/>
             <CheckBox Margin="10 0" DockPanel.Dock="Right" Style="{DynamicResource WinCheckBoxStyle}" Click="WinStateOnClick"/>
             <Button DockPanel.Dock="Right" Style="{DynamicResource BtnToolbarStyle}" Tag="{DynamicResource PButtonMin}" Click="WinMinOnClick"/>

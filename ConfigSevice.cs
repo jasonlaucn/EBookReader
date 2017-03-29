@@ -19,13 +19,19 @@ namespace EBookReader
         private const string CHAPTERINDEXITEMNAME = "ChapterIndex";
         private const string CHAPTEROFFSETITEMNAME = "ChapterOffset";
 
-        public const string DEFAULTTXTREGEX1 = @"^(第.*?章\s*)|^序\s+|^序$|^前言\s+|^前言$|^后记\s|^后记$";
-        public const string DEFAULTTXTREGEX2 = @"^(\d+\.\s*)|^序\s+|^序$|^前言\s+|^前言$|^后记\s|^后记$";
-        public const string REGEXITMENAME = "Regex";
-        public const string BOOKEXT = ".book";
-
         public static string ConfigFile = AppDomain.CurrentDomain.BaseDirectory + @"\Config.ini";
         public static string BookDir = AppDomain.CurrentDomain.BaseDirectory + @"\Books\";
+        public static string DefaultTxtRegex1,DefaultRxtRegex2,BookExt,ImportBookExt;
+        public static bool IsShowFloatingWin = true;
+
+        static ConfigSevice()
+        {
+            DefaultTxtRegex1 = GetAppSetting<string>(AppSettingKey.ChaptersRecogniseRegex, @"^(第.*?章\s*)|^序\s+|^序$|^前言\s+|^前言$|^后记\s|^后记$");
+            DefaultRxtRegex2 = GetAppSetting<string>(AppSettingKey.ChaptersRecogniseRegexBackUp, @"^(\d+\.\s*)|^序\s+|^序$|^前言\s+|^前言$|^后记\s|^后记$");
+            BookExt = GetAppSetting<string>(AppSettingKey.BookExt, ".book");
+            ImportBookExt = GetAppSetting<string>(AppSettingKey.ImportBookExt, "*.txt;");
+            IsShowFloatingWin = GetAppSetting<string>(AppSettingKey.ShowFloatingWin, "1") == "1";
+        }
 
         public static T GetAppSetting<T>(AppSettingKey key, object defaultValue = null)
         {

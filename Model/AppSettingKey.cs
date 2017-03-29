@@ -1,21 +1,28 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
+﻿
 namespace EBookReader.Model
 {
     public enum AppSettingKey
     {
         /// <summary>
-        /// 章节识别正则
+        /// 章节匹配正则
         /// </summary>
         ChaptersRecogniseRegex,
+        /// <summary>
+        /// 章节匹配正则（备用）
+        /// </summary>
+        ChaptersRecogniseRegexBackUp,
         /// <summary>
         /// 书本扩展名
         /// </summary>
         BookExt,
+        /// <summary>
+        /// 导入书籍扩展名
+        /// </summary>
+        ImportBookExt,
+        /// <summary>
+        /// 浮窗是否显示
+        /// </summary>
+        ShowFloatingWin,
     }
 
     public enum ConfigKey
